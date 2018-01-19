@@ -1,6 +1,15 @@
 {-# LANGUAGE DeriveLift #-}
 {-# LANGUAGE OverloadedStrings #-}
 
+--------------------------------------------------------------------------
+--
+-- Copyright: (c) Javier López Durá
+-- License: BSD3
+--
+-- Maintainer: Javier López Durá <linux.kitten@gmail.com>
+--
+--------------------------------------------------------------------------
+
 module Network.Web3.Dapp.EthABI.AST
   ( SolcAST(..)
   , Children(..)
