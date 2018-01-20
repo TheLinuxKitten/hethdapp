@@ -97,7 +97,7 @@ El fuente se compila en el modulo `Coin.hs`:
         ])
 ```
 
-La compilación produce la siguiente interfaz _Haskell_:
+La compilación (ver documentación de la función `compile`) produce la siguiente interfaz _Haskell_:
 ```haskell
 data Coin_Event = Coin_Sent (HexEthAddr, HexEthAddr, Integer)
 data Coin_Event_Filter = Coin_Sent_Filter

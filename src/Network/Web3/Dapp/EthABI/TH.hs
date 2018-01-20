@@ -81,15 +81,16 @@ import Network.Web3.Types
 --    * Para las funciones de tipo /view/ genera una función ___call__ que
 --      recibe los parámetros de entrada necesarios (la dirección del emisor,
 --      la dirección del contract y los parámetros de entrada si los tiene)
---      y devuelve la salida.
+--      y devuelve la salida. Ver `web3_call`.
 --
 --    * Para las funciones de tipo /pure/ también genera una función
 --      ___call_pure__. Esta función no espera la dirección del emisor.
+--      Ver `web3_callPure`.
 --
 --    * Para las funciones de tipo /nonpayable/ y /payable/ genera una
---      función ___sendtx__ que devuelve los datos necesarios (una tupla
---      de cuatro valores) para hacer una transacción (Ver
---      'web3_estimateAndSendTx'' y 'web3_estimateAndSendTxs'.
+--      función ___call__ y una función ___sendtx__ que devuelve los datos
+--      necesarios (una tupla de cuatro valores) para hacer una transacción
+--      (Ver 'web3_estimateAndSendTx'' y 'web3_estimateAndSendTxs'.
 --
 --    * El constructor se trata como una función cuyo nombre es __new__.
 --      La función espera la dirección del emisor y los parámetros de entrada,
@@ -300,8 +301,14 @@ genFuncCall stm isCons conName funName ips ops = do
     SMView -> case length ops of
       0 -> return []
       _ -> genCall False conName funName fromA toA datD funDatInD ips
-    SMNonPayable -> genSendTx False isCons conName funName fromA toA datD funDatInD ips
-    SMPayable -> genSendTx True isCons conName funName fromA toA datD funDatInD ips
+    SMNonPayable -> do
+      txD <- genSendTx False isCons conName funName fromA toA datD funDatInD ips
+      callD <- genCall False conName funName fromA toA datD funDatInD ips
+      return $ txD ++ callD
+    SMPayable -> do
+      txD <- genSendTx True isCons conName funName fromA toA datD funDatInD ips
+      callD <- genCall False conName funName fromA toA datD funDatInD ips
+      return $ txD ++ callD
 
 genConstr :: Text -> Constructor -> Q [Dec]
 genConstr conName constructor = do
