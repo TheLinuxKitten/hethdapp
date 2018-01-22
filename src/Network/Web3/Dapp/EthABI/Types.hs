@@ -120,7 +120,7 @@ data Type =
     | TyBytes
     | TyUtf8
     | TyFunction
-    deriving (THS.Lift, Show)
+    deriving (Eq, THS.Lift, Show)
 
 uint8 = TyInt False 8
 uint160 = TyInt False 160
@@ -130,13 +130,13 @@ int256 = TyInt True 256
 data TypeArray = NoArray
                | FixedArray Int
                | DynamicArray
-               deriving (THS.Lift, Show)
+               deriving (Eq, THS.Lift, Show)
 
 data Param = Param
     { abiParamName :: Text
     , abiParamType :: Type
     , abiParamTypeArray :: TypeArray
-    } deriving (THS.Lift, Show)
+    } deriving (Eq, THS.Lift, Show)
 
 parseType :: Text -> Maybe [Param] -> (Type,TypeArray)
 parseType sty mcs
@@ -189,7 +189,7 @@ data StateMutability = SMPure
                      | SMView
                      | SMNonPayable
                      | SMPayable
-                     deriving (THS.Lift, Show)
+                     deriving (Eq, THS.Lift, Show)
 
 instance FromJSON StateMutability where
     parseJSON (String s) = return $ case s of
@@ -205,7 +205,7 @@ data Function = Function
     , abiFuncPayable :: Bool
     , abiFuncStateMutability :: StateMutability
     , abiFuncConstant :: Bool
-    } deriving (THS.Lift, Show)
+    } deriving (Eq, THS.Lift, Show)
 
 instance FromJSON Function where
     parseJSON (Object o) = Function
@@ -221,7 +221,7 @@ data Constructor = Constructor
     , abiConsPayable :: Bool
     , abiConsStateMutability :: StateMutability
     , abiConsConstant :: Bool
-    } deriving (THS.Lift, Show)
+    } deriving (Eq, THS.Lift, Show)
 
 instance FromJSON Constructor where
     parseJSON (Object o) = Constructor
@@ -234,7 +234,7 @@ data Fallback = Fallback
     { abiFallPayable :: Bool
     , abiFallStateMutability :: StateMutability
     , abiFallConstant :: Bool
-    } deriving (THS.Lift, Show)
+    } deriving (Eq, THS.Lift, Show)
 
 instance FromJSON Fallback where
     parseJSON (Object o) = Fallback
@@ -245,7 +245,7 @@ instance FromJSON Fallback where
 data EventParam = EventParam
     { abiEventParam :: Param
     , abiEventParamIndexed :: Bool
-    } deriving (THS.Lift, Show)
+    } deriving (Eq, THS.Lift, Show)
 
 instance FromJSON EventParam where
     parseJSON v@(Object o) = EventParam
@@ -256,7 +256,7 @@ data Event = Event
     { abiEventName :: Text
     , abiEventInputs :: [EventParam]
     , abiEventAnonymous :: Bool
-    } deriving (THS.Lift, Show)
+    } deriving (Eq, THS.Lift, Show)
 
 instance FromJSON Event where
     parseJSON (Object o) = Event
@@ -268,7 +268,7 @@ data Interface = IFunction { abiInterfaceFunction :: Function }
                | IConstructor { abiInterfaceConstructor :: Constructor }
                | IFallback { abiInterfaceFallback :: Fallback }
                | IEvent { abiInterfaceEvent :: Event }
-               deriving (THS.Lift, Show)
+               deriving (Eq, THS.Lift, Show)
 
 isInterfaceConstructor :: Interface -> Bool
 isInterfaceConstructor iface = case iface of
@@ -301,7 +301,7 @@ data Contract = Contract
     , abiContractBin :: Maybe HexData
     , abiContractBinRuntime :: HexData
     , abiContractMetadata :: LBS.ByteString
-    } deriving (THS.Lift, Show)
+    } deriving (Eq, THS.Lift, Show)
 
 parseContract :: Text -> Value -> Parser Contract
 parseContract n (Object o) = Contract (snd $ spanName n) (fst $ spanName n)
@@ -391,7 +391,7 @@ data AbiValue =
     | AVString { getAbiString :: Text }
     | AVArray { getAbiArray :: [AbiValue] }
     | AVTuple { getAbiTuple :: [AbiValue] }
-    deriving (Show)
+    deriving (Eq, Show)
 
 class AbiValueEncoding a where
     toAbiValue :: a -> AbiValue
@@ -711,7 +711,7 @@ class ToEventFilter a where
 data CompilationTarget = CompilationTarget
   { metaTargetPath :: FilePath
   , metaTargetName :: Text
-  } deriving (Show)
+  } deriving (Eq, Show)
 
 instance FromJSON CompilationTarget where
   parseJSON (Object o) = do
@@ -721,7 +721,7 @@ instance FromJSON CompilationTarget where
 data Optimizer = Optimizer
   { metaOptimizerRuns :: Int
   , metaOptimizerEnabled :: Bool
-  } deriving (Show)
+  } deriving (Eq, Show)
 
 instance FromJSON Optimizer where
   parseJSON (Object o) = Optimizer
@@ -733,7 +733,7 @@ data Settings = Settings
   , metaSettingsRemappings :: [Text]
   , metaSettingsOptimizer :: Optimizer
   , metaSettingsLibraries :: Value
-  } deriving (Show)
+  } deriving (Eq, Show)
 
 instance FromJSON Settings where
   parseJSON (Object o) = Settings
@@ -746,7 +746,7 @@ data Source = Source
   { metaSourcePath :: FilePath
   , metaSourceBzzr :: HexHash256
   , metaSourceHash :: HexHash256
-  } deriving (Show)
+  } deriving (Eq, Show)
 
 parseSource fp (Object o) = Source (T.unpack fp)
                         <$> (joinHex . T.drop 7 . head <$> o .: "urls")
@@ -756,7 +756,7 @@ data Output = Output
   { metaOutputDevdoc :: Value
   , metaOutputAbi :: [Interface]
   , metaOutputUserdoc :: Value
-  } deriving (Show)
+  } deriving (Eq, Show)
 
 instance FromJSON Output where
   parseJSON (Object o) = Output
@@ -764,12 +764,12 @@ instance FromJSON Output where
                      <*> o .: "abi"
                      <*> o .: "userdoc"
 
-data ProgLanguage = Solidity deriving (Show)
+data ProgLanguage = Solidity deriving (Eq, Show)
 
 instance FromJSON ProgLanguage where
   parseJSON (String "Solidity") = return Solidity
 
-newtype Compiler = Compiler { metaCompilerVersion :: Text } deriving (Show)
+newtype Compiler = Compiler { metaCompilerVersion :: Text } deriving (Eq, Show)
 
 instance FromJSON Compiler where
   parseJSON (Object o) = Compiler <$> o .: "version"
@@ -781,7 +781,7 @@ data Metadata = Metadata
   , metaVersion :: Int
   , metaLanguage :: ProgLanguage
   , metaCompiler :: Compiler
-  } deriving (Show)
+  } deriving (Eq, Show)
 
 instance FromJSON Metadata where
   parseJSON (Object o) = Metadata
