@@ -92,6 +92,9 @@ import Network.Web3.Types
 --      necesarios (una tupla de cuatro valores) para hacer una transacción
 --      (Ver 'web3_estimateAndSendTx'' y 'web3_estimateAndSendTxs'.
 --
+--    * Las funciones ___call__ y ___call_pure__ se generan si la función
+--      devuelve parámetros, o sea, tiene /outputs/.
+--
 --    * El constructor se trata como una función cuyo nombre es __new__.
 --      La función espera la dirección del emisor y los parámetros de entrada,
 --      si los tiene.
@@ -303,11 +306,11 @@ genFuncCall stm isCons conName funName ips ops = do
       _ -> genCall False conName funName fromA toA datD funDatInD ips
     SMNonPayable -> do
       txD <- genSendTx False isCons conName funName fromA toA datD funDatInD ips
-      callD <- genCall False conName funName fromA toA datD funDatInD ips
+      callD <- genFuncCall SMView isCons conName funName ips ops
       return $ txD ++ callD
     SMPayable -> do
       txD <- genSendTx True isCons conName funName fromA toA datD funDatInD ips
-      callD <- genCall False conName funName fromA toA datD funDatInD ips
+      callD <- genFuncCall SMView isCons conName funName ips ops
       return $ txD ++ callD
 
 genConstr :: Text -> Constructor -> Q [Dec]
