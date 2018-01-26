@@ -24,9 +24,9 @@ Uso de _Template Haskell_ para generar una interfaz _Haskell_ de acceso a _contr
 
   * _sendTx_ para funciones _payable_ o _nonpayable_.
 
-* función para decodificar los logs emitidos por el _contract_
+* tipo de datos y función para decodificar los logs emitidos por el _contract_
 
-* función para crear _filters_
+* tipo de datos y función para crear _filters_
 
 * función para verificar el código binario del _contract_ almacenado en el blockchain
 
@@ -56,7 +56,8 @@ El _contract_ `Coin` del proyecto **hsoldapps** está en el fichero fuente `coin
 
         // Events allow light clients to react on
         // changes efficiently.
-        event Sent(address from, address to, uint amount);
+        event Mint(address indexed to, uint amount);
+        event Sent(address indexed from, address indexed to, uint indexed amount);
 
         // This is the constructor whose code is
         // run only when the contract is created.
@@ -99,8 +100,14 @@ El fuente se compila en el modulo `Coin.hs`:
 
 La compilación (ver documentación de la función `compile`) produce la siguiente interfaz _Haskell_:
 ```haskell
-data Coin_Event = Coin_Sent (HexEthAddr, HexEthAddr, Integer)
-data Coin_Event_Filter = Coin_Sent_Filter
+data Coin_Event
+      = Coin_Mint (HexEthAddr, Integer) |
+        Coin_Sent (HexEthAddr, HexEthAddr, Integer)
+      deriving (Show)
+data Coin_Event_Filter
+      = Coin_Mint_Filter (Maybe HexEthAddr) |
+        Coin_Sent_Filter (Maybe HexEthAddr, Maybe HexEthAddr, Maybe Integer)
+      deriving (Show)
 type Coin_minter_Out = HexEthAddr
 type Coin_balances_In = HexEthAddr
 type Coin_balances_Out = Integer

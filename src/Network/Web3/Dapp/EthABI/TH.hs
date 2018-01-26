@@ -71,7 +71,7 @@ import Network.Web3.Types
 --
 --    * Genera una función ___guard__ para verificar que el código del
 --      contract en el /blockchain/ coincide con el contract compilado.
---      La función espera la dirección del contract.
+--      La función espera la dirección del contract en el blockchain.
 --
 --    * Para cada función genera los tipos y funciones necesarios para
 --      codificar los datos de llamada y decodificar los datos producidos
@@ -88,9 +88,9 @@ import Network.Web3.Types
 --      Ver `web3_callPure`.
 --
 --    * Para las funciones de tipo /nonpayable/ y /payable/ genera una
---      función ___call__ y una función ___sendtx__ que devuelve los datos
+--      función ___call__, y una función ___sendtx__ que devuelve los datos
 --      necesarios (una tupla de cuatro valores) para hacer una transacción
---      (Ver 'web3_estimateAndSendTx'' y 'web3_estimateAndSendTxs'.
+--      (Ver 'web3_estimateAndSendTx'' y 'web3_estimateAndSendTxs').
 --
 --    * Las funciones ___call__ y ___call_pure__ se generan si la función
 --      devuelve parámetros, o sea, tiene /outputs/.
@@ -101,7 +101,9 @@ import Network.Web3.Types
 --
 --    * Genera un nuevo tipo para representar los eventos de los logs, y lo
 --      instancia a la clase 'FromLogEvent' para decodificar los logs. Ver
---      'decodeLogs' y 'DecodeLogResult'.
+--      'decodeLogs' y 'DecodeLogResult'. Cada evento del contract se representa
+--      mediante un constructor en el que sus argumentos son los parámetros
+--      del evento.
 --
 --    * Genera función ___from_log__ que realiza una llamada prototipada
 --      a `fromLogEvent`.
@@ -110,7 +112,10 @@ import Network.Web3.Types
 --
 --    * Genera un nuevo tipo para representar los filter topics de un evento,
 --      y lo instancia a la clase 'ToEventFilter' para codificar los topics.
---      Ver 'encodeEventFilter'.
+--      Ver 'encodeEventFilter'. Cada evento del contract se representa
+--      mediante un constructor en el que sus argumentos son los parámetros
+--      indexed del evento, con el añadido de ser `Maybe` para poder definir su
+--      ausencia (null topic).
 --
 --    * Genera función ___to_filter_topics__ que usa la instancia a
 --      `ToEventFilter` para codificar los topics.
