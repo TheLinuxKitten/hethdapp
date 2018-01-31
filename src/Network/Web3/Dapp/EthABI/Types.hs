@@ -43,6 +43,7 @@ module Network.Web3.Dapp.EthABI.Types
   , ToCanonical(..)
   , AbiValue(..)
   , AbiValueEncoding(..)
+  , fromAbiErr
   , arg0
   , arg1
   , arg2
@@ -306,7 +307,7 @@ data Contract = Contract
 parseContract :: Text -> Value -> Parser Contract
 parseContract n (Object o) = Contract (snd $ spanName n) (fst $ spanName n)
                          <$> (decodeJsonAbi <$> o .: "abi")
-                         <*> (maybe Nothing (Just . joinHex) <$> o .:? "bin")
+                         <*> (fmap joinHex <$> o .:? "bin")
                          <*> (joinHex <$> o .: "bin-runtime")
                          <*> (LBS.fromStrict . TE.encodeUtf8 <$> o .: "metadata")
   where

@@ -28,6 +28,7 @@ module Network.Web3.Dapp.EthABI.TH
   , Solc.SolcSettings(..)
   , Solc.SolcRemapping(..)
   , SwarmSettings(..)
+  , module Network.Web3.Dapp.Bytes.TH
   , module Data.Int
   , module Data.Word
   ) where
@@ -53,6 +54,8 @@ import Network.Web3.Extra
   , web3_guardBin
   )
 import Network.Web3
+import Network.Web3.Dapp.Bytes.TH
+import Network.Web3.Dapp.Bytes.Types
 import Network.Web3.Dapp.EthABI
 import Network.Web3.Dapp.EthABI.Bzz
 import Network.Web3.Dapp.EthABI.Types hiding (Type)
@@ -480,8 +483,8 @@ genType isM idx ty tya = case tya of
     TyAddress -> genAddr >>= genMT isM
     TyBool -> genBool >>= genMT isM
     (TyFixed sg m n) -> genFrac >>= genMT isM
-    (TyBin sz) -> genBs >>= genMT isM
-    TyBytes -> genBs >>= genMT isM
+    (TyBin sz) -> genBin sz >>= genMT isM
+    TyBytes -> genBytes >>= genMT isM
     TyUtf8 -> genString >>= genMT isM
     TyFunction -> fail "genType: Function not implemmented!!!"
   where
@@ -490,7 +493,8 @@ genType isM idx ty tya = case tya of
     genAddr = [t| HexEthAddr |]
     genBool = [t| Bool |]
     genFrac = [t| Double |]
-    genBs = [t| BS.ByteString |]
+    genBin = mkBytesNT
+    genBytes = [t| BS.ByteString |]
     genString = [t| T.Text |]
     genInt sg sz =
       if sg

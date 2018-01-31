@@ -11,7 +11,10 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 library
-  exposed-modules:     Network.Web3.Dapp.EthABI.Types
+  exposed-modules:     Network.Web3.Dapp.Bytes.Types
+                     , Network.Web3.Dapp.Bytes.TH
+                     , Network.Web3.Dapp.Bytes
+                     , Network.Web3.Dapp.EthABI.Types
                      , Network.Web3.Dapp.EthABI
                      , Network.Web3.Dapp.Solc
                      , Network.Web3.Dapp.Swarm
