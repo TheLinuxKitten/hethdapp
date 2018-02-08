@@ -69,6 +69,7 @@ El _contract_ `Coin` del proyecto **hsoldapps** está en el fichero fuente `coin
             require(msg.sender == minter);  //provoca fallo en eth_estimateGas
             //if (msg.sender != minter) return;
             balances[receiver] += amount;
+            Mint(receiver, amount);
         }
 
         function send(address receiver, uint amount) public {
