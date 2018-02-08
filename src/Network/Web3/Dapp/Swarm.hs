@@ -77,7 +77,7 @@ type SwarmResponse = CurlResponse_ [(String,String)] LBS.ByteString
 swarm_get_bzzr :: SwarmSettings -> HexHash256 -> IO (Either Text BS.ByteString)
 swarm_get_bzzr ops bzzr = do
   let url = swarmBzzApi ops ++ "/bzzr:/" ++ T.unpack (stripHex bzzr)
-  cResp <- (curlGetResponse_ url [] :: IO SwarmResponse)
+  cResp <- curlGetResponse_ url [] :: IO SwarmResponse
   let respCode = respCurlCode cResp
   return $ case respCode of
     CurlOK -> Right $ LBS.toStrict $ respBody cResp

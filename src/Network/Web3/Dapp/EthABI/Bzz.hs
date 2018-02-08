@@ -62,7 +62,7 @@ uploadMetadata ops binCode metaBs = do
                  $ Left "uploadMetadata: binary code doesn't contain swarm url"
         Just bzz0 -> do
           eBzzs <- sequence
-               <$> mapM (swarm_up_bzzr ops) (map fst srcBzzs)
+               <$> mapM (swarm_up_bzzr ops . fst) srcBzzs
           eBzz0 <- swarm_stdin_up_bzzr ops (LBS.toStrict metaBs)
           return (eBzz0
               >>= \bzz0' -> eBzzs
@@ -87,7 +87,7 @@ downloadMetadata ops binCode = do
   case mBzzr0 of
     Nothing -> return $ Left "downloadMetadata: code doesn't contain bzzr0 url"
     Just bzzr0 -> do
-      eMetaBs <- either Left (Right . LBS.fromStrict)
+      eMetaBs <- fmap LBS.fromStrict
              <$> swarm_get_bzzr defaultSwarmSettings bzzr0
       case eMetaBs of
         Left e1 -> return (Left e1)

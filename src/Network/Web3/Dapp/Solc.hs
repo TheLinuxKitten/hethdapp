@@ -90,6 +90,6 @@ compile stgs fps = do
                         Right v -> Right v
           return (ecs, decodeSolcAst bs, eval)
   where
-    isExcludedContract = (`elem` (solcExcludes stgs)) . abiContractName
+    isExcludedContract = (`elem` solcExcludes stgs) . abiContractName
 --    isContractAST cs = (`elem` (map abiContractPath cs)) . astSource
 

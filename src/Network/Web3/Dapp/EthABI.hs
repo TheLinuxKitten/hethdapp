@@ -313,7 +313,7 @@ decodeAbiParams :: [Param] -> HexData -> Either Text AbiValue
 decodeAbiParams ps hd =
   let (isOneValueTuple,(ty,tya)) = outputsIsOneValueTuple ps
       eav = decodeAbiValue ty tya hd
-  in (if isOneValueTuple then (head . getAbiTuple) else id) <$> eav
+  in (if isOneValueTuple then head . getAbiTuple else id) <$> eav
 
 -- | Decodifica datos codificados según la especificación Ethereum ABI.
 decodeAbi' :: Interface -> HexData -> Either Text AbiValue
@@ -371,8 +371,8 @@ decodeLogWithEvent ev tps lgd =
       eiavs = decodeEventLogTopics ips tps
       eniavs = decodeEvenLogData nips lgd
   in eiavs >>= \iavs -> eniavs
-           >>= \niavs -> return (foldTopicAvs iavs niavs evps)
-           >>= return . (,) (abiEventName ev) . toUserArg
+           >>= \niavs -> (return . (,) (abiEventName ev) . toUserArg)
+                            (foldTopicAvs iavs niavs evps)
   where
     foldTopicAvs :: [AbiValue] -> [AbiValue] -> [EventParam] -> [AbiValue]
     foldTopicAvs iavs niavs = reverse . fst . foldl topicAv ([],(iavs,niavs))
@@ -395,11 +395,11 @@ topicValueIsHash256 ty tya = case tya of
   FixedArray _ -> True
   NoArray -> case ty of
     (TyTuple _) -> True
-    (TyInt _ _) -> False
+    TyInt{} -> False
     TyAddress -> False
     TyBool -> False
-    (TyFixed _ _ _) -> False
-    (TyBin _) -> False
+    TyFixed{} -> False
+    TyBin{} -> False
     TyBytes -> True
     TyUtf8 -> True
     TyFunction -> False
@@ -465,11 +465,11 @@ encodeTopicAbiValue ty tya av = case tya of
   FixedArray n -> etavFixedArray n av
   NoArray -> case ty of
     (TyTuple cs) -> etavTuple cs av
-    (TyInt _ _) -> encodeAbiValue ty tya av
+    TyInt{} -> encodeAbiValue ty tya av
     TyAddress -> encodeAbiValue ty tya av
     TyBool -> encodeAbiValue ty tya av
-    (TyFixed _ _ _) -> encodeAbiValue ty tya av
-    (TyBin _) -> encodeAbiValue ty tya av
+    TyFixed{} -> encodeAbiValue ty tya av
+    TyBin{} -> encodeAbiValue ty tya av
     TyBytes -> etavBytes av
     TyUtf8 -> etavString av
     TyFunction -> encodeAbiValue ty tya av
@@ -513,7 +513,7 @@ encodeFilterWithEvent (t0,ev) mavs =
     encodeTopicValue (ip,mav) = do
       let (ty,tya) = (abiParamType ip, abiParamTypeArray ip)
       if eventParamValueIsHash256 True ip
-        then (\av -> keccak256 <$> encodeTopicAbiValue ty tya av) <$> mav
+        then (fmap keccak256 . encodeTopicAbiValue ty tya) <$> mav
         else encodeAbiValue ty tya <$> mav
 
 -- Asumo que los vs son compatibles con el tipo de los inputs del event
@@ -538,7 +538,7 @@ encodeEventFilter ifs evName mavs =
       evt0s = map logTopic0 evs
       t0sevs = zip evt0s evs
       t0sevs' = filter (filterEvent evName mavs eventIndexedParams . snd) t0sevs
-      esft = map (flip encodeFilterWithEvent mavs) t0sevs'
+      esft = map (`encodeFilterWithEvent` mavs) t0sevs'
       t0sevsesft = zip t0sevs' esft
       t0sevsfts = filter (isRight . snd) t0sevsesft
       lenEsft = length t0sevsesft
