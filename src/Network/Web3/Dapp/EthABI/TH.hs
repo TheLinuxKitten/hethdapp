@@ -28,6 +28,7 @@ module Network.Web3.Dapp.EthABI.TH
   , Solc.SolcSettings(..)
   , Solc.SolcRemapping(..)
   , SwarmSettings(..)
+  , FixArray(..)
   , module Network.Web3.Dapp.Bytes.TH
   , module Data.Int
   , module Data.Word
@@ -60,6 +61,7 @@ import Network.Web3.Dapp.EthABI
 import Network.Web3.Dapp.EthABI.Bzz
 import Network.Web3.Dapp.EthABI.Types hiding (Type)
 import qualified Network.Web3.Dapp.EthABI.Types as Abi
+import Network.Web3.Dapp.FixArray.Internal
 import qualified Network.Web3.Dapp.Solc as Solc
 import Network.Web3.Dapp.Swarm (SwarmSettings(..),defaultSwarmSettings)
 import Network.Web3.HexText
@@ -476,7 +478,7 @@ genParam isM (idx,p) =
 genType :: Bool -> Bool -> Abi.Type -> TypeArray -> Q Type
 genType isM idx ty tya = case tya of
   DynamicArray -> genList idx ty >>= genMT isM
-  FixedArray n -> genList idx ty >>= genMT isM
+  FixedArray n -> genFixArray n idx ty >>= genMT isM
   NoArray -> case ty of
     (TyTuple cs) -> genParams isM $ idxParams idx cs
     (TyInt sg sz) -> genInt sg sz >>= genMT isM
@@ -490,6 +492,7 @@ genType isM idx ty tya = case tya of
   where
     genMT isM t = if isM then flip AppT t <$> [t| Maybe |] else return t
     genList idx' ty' = AppT ListT <$> genType False idx' ty' NoArray
+    genFixArray n idx' ty' = mkFixArray n $ genType False idx' ty' NoArray
     genAddr = [t| HexEthAddr |]
     genBool = [t| Bool |]
     genFrac = [t| Double |]
@@ -498,8 +501,8 @@ genType isM idx ty tya = case tya of
     genString = [t| T.Text |]
     genInt sg sz =
       if sg
-        then genIntSz sz [t| Int8 |]  [t| Int16 |]  [t| Int |]  [t| Int64 |]
-        else genIntSz sz [t| Word8 |] [t| Word16 |] [t| Word |] [t| Word64 |]
+        then genIntSz sz [t| Int8 |]  [t| Int16 |]  [t| Int32 |]  [t| Int64 |]
+        else genIntSz sz [t| Word8 |] [t| Word16 |] [t| Word32 |] [t| Word64 |]
     genIntSz sz t8 t16 t32 t64 =
       if sz <= 8 then t8
         else if sz <= 16 then t16

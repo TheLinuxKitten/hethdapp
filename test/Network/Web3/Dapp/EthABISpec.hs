@@ -18,8 +18,7 @@ main :: IO ()
 main = hspec spec
 
 spec :: Spec
-spec = do
-  describe "EthABI" $ do
+spec = describe "EthABI" $ do
     tC <- runIO (head . fromRight . fst' <$> compile (SolcSettings [] []) ["./test/Network/Web3/Dapp/types.sol"])
     it "Codificar y decodificar valores" $ do
       avBool False `shouldBe` "0x0000000000000000000000000000000000000000000000000000000000000000"

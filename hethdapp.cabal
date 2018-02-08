@@ -14,6 +14,8 @@ library
   exposed-modules:     Network.Web3.Dapp.Bytes.Types
                      , Network.Web3.Dapp.Bytes.TH
                      , Network.Web3.Dapp.Bytes
+                     , Network.Web3.Dapp.FixArray.Internal
+                     , Network.Web3.Dapp.FixArray
                      , Network.Web3.Dapp.EthABI.Types
                      , Network.Web3.Dapp.EthABI
                      , Network.Web3.Dapp.Solc
@@ -34,6 +36,8 @@ library
                      , memory
                      , monad-logger
                      , process
+                     , singletons
+                     , sized
                      , split
                      , template-haskell
                      , text
@@ -55,5 +59,6 @@ test-suite spec
                       , hspec == 2.*
                       , text
   other-modules:        Network.Web3.Dapp.EthABISpec
+                      , Network.Web3.Dapp.FixArraySpec
   default-language:     Haskell2010
 
