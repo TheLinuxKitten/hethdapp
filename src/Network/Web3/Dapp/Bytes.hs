@@ -18,6 +18,6 @@ module Network.Web3.Dapp.Bytes
   , module Network.Web3.Dapp.Bytes.TH
   ) where
 
-import Network.Web3.Dapp.Bytes.Types
+import Network.Web3.Dapp.Bytes.Internal
 import Network.Web3.Dapp.Bytes.TH
 

@@ -1,7 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE TemplateHaskell #-}
-
+{-# OPTIONS_HADDOCK hide #-}
 --------------------------------------------------------------------------
 --
 -- Copyright: (c) Javier López Durá
@@ -11,7 +11,7 @@
 --
 --------------------------------------------------------------------------
 
-module Network.Web3.Dapp.Bytes.Types
+module Network.Web3.Dapp.Bytes.Internal
   ( BytesN
   , bytesN
   , zeroN

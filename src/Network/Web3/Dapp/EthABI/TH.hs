@@ -56,7 +56,7 @@ import Network.Web3.Extra
   )
 import Network.Web3
 import Network.Web3.Dapp.Bytes.TH
-import Network.Web3.Dapp.Bytes.Types
+import Network.Web3.Dapp.Bytes.Internal
 import Network.Web3.Dapp.EthABI
 import Network.Web3.Dapp.EthABI.Bzz
 import Network.Web3.Dapp.EthABI.Types hiding (Type)

@@ -14,7 +14,7 @@
 
 module Network.Web3.Dapp.Bytes.TH where
 
-import Network.Web3.Dapp.Bytes.Types
+import Network.Web3.Dapp.Bytes.Internal
 
 $(concat <$> mapM mkBytesN [1..32])
 

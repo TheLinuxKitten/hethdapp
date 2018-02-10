@@ -11,6 +11,7 @@
 --{-# LANGUAGE TypeFamilies #-}
 --{-# LANGUAGE TypeInType #-}
 {-# LANGUAGE TypeSynonymInstances #-}
+{-# OPTIONS_HADDOCK hide #-}
 
 --------------------------------------------------------------------------
 --
