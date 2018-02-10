@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS_HADDOCK hide #-}
 --------------------------------------------------------------------------
@@ -18,8 +19,8 @@ module Network.Web3.Dapp.Bytes.Internal
   , updateN
   , lengthN
   , mkBytesN
-  , mkAbiValueEncodingN
-  , mkIsStringN
+--  , mkAbiValueEncodingN
+--  , mkIsStringN
   , mkBytesNT
   ) where
 
@@ -33,7 +34,7 @@ import Language.Haskell.TH.Syntax
 import Network.Web3.Dapp.EthABI.Types hiding (Type)
 
 newtype BytesN (n :: Nat) = BytesN { unBytesN :: BS.ByteString }
-                          deriving (Eq, Show)
+                          deriving (Eq, Ord, Read, Show)
 
 bytesN :: (KnownNat n) => BytesN n -> BS.ByteString
 bytesN = unBytesN
@@ -49,7 +50,7 @@ updateN bn bs =
   let nBy = lengthN bn
       lenBs = BS.length bs
   in BytesN $ if lenBs > nBy
-               then BS.take lenBs bs
+               then BS.drop (lenBs - nBy) bs
                else if lenBs < nBy
                      then bs <> BS.pack (replicate (nBy-lenBs) 0)
                      else bs
@@ -72,6 +73,12 @@ mkBytesN nBy = do
   let funZD = FunD funZName [Clause [] (NormalB zeroNE) []]
   return [typeD, funSigD, funD, funZSigD, funZD]
 
+instance (KnownNat n) => AbiValueEncoding (BytesN n) where
+  toAbiValue = toAbiValue . unBytesN
+  fromAbiValue (AVBytes bs) = Right $ updateN zeroN bs
+  fromAbiValue av = fromAbiErr "BytesN" av
+
+{-
 mkAbiValueEncodingN :: Int -> Q [Dec]
 mkAbiValueEncodingN nBy = do
   let tyNameS = T.pack $ "Bytes" ++ show nBy
@@ -81,7 +88,12 @@ mkAbiValueEncodingN nBy = do
           fromAbiValue (AVBytes bs) = Right $ updateN (BytesN BS.empty) bs
           fromAbiValue av = fromAbiErr tyNameS av
       |]
+-}
 
+instance (KnownNat n) => IsString (BytesN n) where
+  fromString = updateN zeroN . C8.pack
+
+{-
 mkIsStringN :: Int -> Q [Dec]
 mkIsStringN nBy = do
   let tyNameS = "Bytes" ++ show nBy
@@ -89,6 +101,7 @@ mkIsStringN nBy = do
   [d| instance IsString $tyNameT where
           fromString = updateN (BytesN BS.empty) . C8.pack
       |]
+-}
 
 mkBytesNT :: Int -> Q Type
 mkBytesNT nBy = return $ ConT $ mkName $ "Bytes" ++ show nBy

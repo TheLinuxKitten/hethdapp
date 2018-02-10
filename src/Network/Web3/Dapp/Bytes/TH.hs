@@ -17,8 +17,8 @@ module Network.Web3.Dapp.Bytes.TH where
 import Network.Web3.Dapp.Bytes.Internal
 
 $(concat <$> mapM mkBytesN [1..32])
-
+{-
 $(concat <$> mapM mkAbiValueEncodingN [1..32])
-
 $(concat <$> mapM mkIsStringN [1..32])
+-}
 
