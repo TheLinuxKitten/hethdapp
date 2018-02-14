@@ -8,6 +8,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Network.Web3.Dapp.Bytes
 import Network.Web3.Dapp.EthABI.Types
+import Network.Web3.Dapp.Int
 import Test.Hspec
 
 main :: IO ()
@@ -29,4 +30,18 @@ spec = describe "Bytes" $ do
     toAbiValue (bytes5 "12345") `shouldBe` AVBytes "12345"
     (fromAbiValue (AVDec 5) :: Either Text Bytes5) `shouldSatisfy` isLeft
     (fromAbiValue (AVBytes "12") :: Either Text Bytes2) `shouldSatisfy` isRight
+  it "Conversiones Integer" $ do
+    toInteger (toUIntN ("\xff\xff" :: Bytes1) :: Uint16) `shouldBe` 0xff
+    toInteger (toUIntN ("\xff\xff" :: Bytes2) :: Uint16) `shouldBe` 0xffff
+    bytesN (fromUIntN (toUIntN ("\xff\xff" :: Bytes1) :: Uint16) :: Bytes2)
+      `shouldBe` "\xff\0"
+    bytesN (fromUIntN (toUIntN ("\xff\xff" :: Bytes1) :: Uint16) :: Bytes1)
+      `shouldBe` "\xff"
+    bytesN (fromUIntN (toUIntN ("" :: Bytes1) :: Uint16) :: Bytes2)
+      `shouldBe` "\0\0"
+    bytesN (fromUIntN (toUIntN ("" :: Bytes1) :: Uint16) :: Bytes1)
+      `shouldBe` "\0"
+    bytesN (("" :: Bytes2) + ("Ho" :: Bytes2)) `shouldBe` "Ho"
+    bytesN (("\xff\xff" :: Bytes2) + ("Ho" :: Bytes2)) `shouldBe` "Hn"
+    bytesN (("\0\0\x1" :: Bytes3) * ("Hol" :: Bytes3)) `shouldBe` "Hol"
 

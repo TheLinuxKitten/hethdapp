@@ -15,6 +15,8 @@ module Network.Web3.Dapp.Bytes
   , zeroN
   , updateN
   , lengthN
+  , fromUIntN
+  , toUIntN
   , module Network.Web3.Dapp.Bytes.TH
   ) where
 
