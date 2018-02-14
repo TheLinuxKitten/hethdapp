@@ -11,7 +11,10 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 library
-  exposed-modules:     Network.Web3.Dapp.Bytes.Internal
+  exposed-modules:     Network.Web3.Dapp.Int.Internal
+                     , Network.Web3.Dapp.Int.TH
+                     , Network.Web3.Dapp.Int
+                     , Network.Web3.Dapp.Bytes.Internal
                      , Network.Web3.Dapp.Bytes.TH
                      , Network.Web3.Dapp.Bytes
                      , Network.Web3.Dapp.FixArray.Internal
@@ -59,6 +62,7 @@ test-suite spec
                       , hspec == 2.*
                       , text
   other-modules:        Network.Web3.Dapp.EthABISpec
+                      , Network.Web3.Dapp.IntSpec
                       , Network.Web3.Dapp.BytesSpec
                       , Network.Web3.Dapp.FixArraySpec
   default-language:     Haskell2010

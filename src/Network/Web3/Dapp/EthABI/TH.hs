@@ -30,8 +30,7 @@ module Network.Web3.Dapp.EthABI.TH
   , SwarmSettings(..)
   , FixArray(..)
   , module Network.Web3.Dapp.Bytes.TH
-  , module Data.Int
-  , module Data.Word
+  , module Network.Web3.Dapp.Int.TH
   ) where
 
 import Control.Arrow ((&&&))
@@ -62,6 +61,8 @@ import Network.Web3.Dapp.EthABI.Bzz
 import Network.Web3.Dapp.EthABI.Types hiding (Type)
 import qualified Network.Web3.Dapp.EthABI.Types as Abi
 import Network.Web3.Dapp.FixArray.Internal
+import Network.Web3.Dapp.Int.TH
+import Network.Web3.Dapp.Int.Internal
 import qualified Network.Web3.Dapp.Solc as Solc
 import Network.Web3.Dapp.Swarm (SwarmSettings(..),defaultSwarmSettings)
 import Network.Web3.HexText
@@ -499,6 +500,8 @@ genType isM idx ty tya = case tya of
     genBin = mkBytesNT
     genBytes = [t| BS.ByteString |]
     genString = [t| T.Text |]
+    genInt sg = if sg then mkIntNT else mkUIntNT
+    {-
     genInt sg sz =
       if sg
         then genIntSz sz [t| Int8 |]  [t| Int16 |]  [t| Int32 |]  [t| Int64 |]
@@ -509,4 +512,5 @@ genType isM idx ty tya = case tya of
               else if sz <= 32 then t32
                     else if sz <= 64 then t64
                           else [t| Integer |]
+    -}
 
