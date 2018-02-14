@@ -102,18 +102,18 @@ El fuente se compila en el modulo `Coin.hs`:
 La compilación (ver documentación de la función `compile`) produce la siguiente interfaz _Haskell_:
 ```haskell
 data Coin_Event
-      = Coin_Mint (HexEthAddr, Integer) |
-        Coin_Sent (HexEthAddr, HexEthAddr, Integer)
+      = Coin_Mint (HexEthAddr, Uint256) |
+        Coin_Sent (HexEthAddr, HexEthAddr, Uint256)
       deriving (Show)
 data Coin_Event_Filter
       = Coin_Mint_Filter (Maybe HexEthAddr) |
-        Coin_Sent_Filter (Maybe HexEthAddr, Maybe HexEthAddr, Maybe Integer)
+        Coin_Sent_Filter (Maybe HexEthAddr, Maybe HexEthAddr, Maybe Uint256)
       deriving (Show)
 type Coin_minter_Out = HexEthAddr
 type Coin_balances_In = HexEthAddr
-type Coin_balances_Out = Integer
-type Coin_mint_In = (HexEthAddr, Integer)
-type Coin_send_In = (HexEthAddr, Integer)
+type Coin_balances_Out = Uint256
+type Coin_mint_In = (HexEthAddr, Uint256)
+type Coin_send_In = (HexEthAddr, Uint256)
 coin_contract :: Contract
 coin_new_in :: HexData
 coin_new_sendtx :: HexEthAddr -> (HexEthAddr, Maybe HexEthAddr, Maybe Integer, Maybe HexData)
