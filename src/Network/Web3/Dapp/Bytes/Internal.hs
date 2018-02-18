@@ -21,6 +21,7 @@ module Network.Web3.Dapp.Bytes.Internal
   , zeroN
   , updateN
   , lengthN
+  , indexN
   , mkBytesN
 --  , mkAbiValueEncodingN
 --  , mkIsStringN
@@ -37,6 +38,7 @@ import Data.Monoid ((<>))
 import Data.Proxy
 import Data.Ratio
 import qualified Data.Text as T
+import Data.Word
 import GHC.Exts
 import GHC.TypeLits (KnownNat, Nat, natVal)
 import Language.Haskell.TH.Syntax
@@ -55,21 +57,28 @@ instance (KnownNat n) => Show (BytesN n) where
 lengthN :: (KnownNat n) => BytesN n -> Int
 lengthN = fromIntegral . natVal
 
+indexN :: (KnownNat n) => BytesN n -> Int -> Word8
+indexN b = BS.index (bytesN b)
+
 emptyN :: (KnownNat n) => BytesN n
 emptyN = BytesN BS.empty
 
 zeroN :: (KnownNat n) => BytesN n
 zeroN = updateN emptyN BS.empty
 
-updateN :: (KnownNat n) => BytesN n -> BS.ByteString -> BytesN n
-updateN bn bs =
+updateN' :: (KnownNat n) => Bool -> BytesN n -> BS.ByteString -> BytesN n
+updateN' padL bn bs =
   let nBy = lengthN bn
       lenBs = BS.length bs
   in BytesN $ if lenBs > nBy
                then BS.drop (lenBs - nBy) bs
                else if lenBs < nBy
-                     then bs <> BS.pack (replicate (nBy-lenBs) 0)
+                     then let ex = BS.pack (replicate (nBy-lenBs) 0)
+                          in if padL then bs <> ex else ex <> bs
                      else bs
+
+updateN :: (KnownNat n) => BytesN n -> BS.ByteString -> BytesN n
+updateN = updateN' True
 
 mkBytesN :: Int -> Q [Dec]
 mkBytesN nBy = do
@@ -133,10 +142,13 @@ bs2integer = w82integer . BS.unpack
 w82integer = fst . foldr (\w8 (r,i) -> ((toInteger w8)*(256^i)+r,i+1)) (0,0)
 
 fromUIntN :: (KnownNat m, KnownNat n) => UIntN m -> BytesN n
-fromUIntN = updateN emptyN . integer2bs . toInteger
+fromUIntN = fromInteger . toInteger
 
 toUIntN :: (KnownNat m, KnownNat n) => BytesN m -> UIntN n
-toUIntN = fromInteger . bs2integer . bytesN
+toUIntN = fromInteger . toInteger
+
+updateUIntN :: (KnownNat n) => BytesN n -> BS.ByteString -> BytesN n
+updateUIntN = updateN' False
 
 instance (forall. KnownNat n) => Num (BytesN n) where
   (+) = iBinOp (+)
@@ -144,7 +156,7 @@ instance (forall. KnownNat n) => Num (BytesN n) where
   abs = iMonOp abs
   negate = iMonOp (negateN $ natVal (Proxy :: (forall. KnownNat n) => Proxy n))
   signum = iMonOp signum
-  fromInteger = updateN emptyN . integer2bs
+  fromInteger = updateUIntN emptyN . integer2bs
 
 negateN :: Integer -> Integer -> Integer
 negateN nBy a
@@ -156,15 +168,14 @@ instance (forall. KnownNat n) => Real (BytesN n) where
   toRational (BytesN bs) = bs2integer bs % 1
 
 instance (forall. KnownNat n) => Enum (BytesN n) where
-  toEnum = updateN emptyN . integer2bs . toInteger
-  fromEnum = fromIntegral . bs2integer . bytesN
+  toEnum = fromInteger . toInteger
+  fromEnum = fromIntegral . toInteger
 
 instance (forall. KnownNat n) => Integral (BytesN n) where
   quotRem (BytesN bs1) (BytesN bs2) =
     let i1 = bs2integer bs1
         i2 = bs2integer bs2
-    in ( updateN emptyN $ integer2bs $ i1 `quot` i2
-       , updateN emptyN $ integer2bs $ i1 `rem` i2)
+    in (fromInteger $ i1 `quot` i2, fromInteger $ i1 `rem` i2)
   toInteger = bs2integer . bytesN
 
 instance (forall. KnownNat n) => Bits (BytesN n) where
@@ -191,8 +202,7 @@ wBinOp op b1 b2 = updateN emptyN
 
 wMonOp op = updateN emptyN . BS.pack . map op . BS.unpack . bytesN
 
-iBinOp op b1 b2 = updateN emptyN $ integer2bs
-                $ op (bs2integer $ bytesN b1) (bs2integer $ bytesN b2)
+iBinOp op b1 b2 = fromInteger $ op (toInteger b1) (toInteger b2)
 
-iMonOp op = updateN emptyN . integer2bs . op . bs2integer . bytesN
+iMonOp op = fromInteger . op . toInteger
 
