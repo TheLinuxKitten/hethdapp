@@ -40,6 +40,8 @@ module Network.Web3.Dapp.EthABI.Types
   , lookupConstructor
   , lookupInterfaceFunction
   , lookupFunction
+  , lookupInterfaceEvent
+  , lookupEvent
   , ToCanonical(..)
   , AbiValue(..)
   , AbiValueEncoding(..)
@@ -241,7 +243,7 @@ instance FromJSON Fallback where
     parseJSON (Object o) = Fallback
                        <$> o .:? "payable" .!= False
                        <*> o .: "stateMutability"
-                       <*> o .: "constant"
+                       <*> o .:? "constant" .!= False
 
 data EventParam = EventParam
     { abiEventParam :: Param
@@ -320,6 +322,9 @@ getConstructors = filter isInterfaceConstructor . abiContractAbi
 getFunctions :: Contract -> [Interface]
 getFunctions = filter isInterfaceFunction . abiContractAbi
 
+getEvents :: Contract -> [Interface]
+getEvents = filter isInterfaceEvent . abiContractAbi
+
 -- | Devuelve el constructor del `Contract`, si existe.
 lookupInterfaceConstructor :: Contract -> Maybe Interface
 lookupInterfaceConstructor = listToMaybe . getConstructors
@@ -337,6 +342,16 @@ lookupInterfaceFunction n = listToMaybe
 -- | Busca función por nombre y la devuelve si existe.
 lookupFunction :: Text -> Contract -> Maybe Function
 lookupFunction n c = abiInterfaceFunction <$> lookupInterfaceFunction n c
+
+-- | Busca event por nombre y lo devuelve si existe.
+lookupInterfaceEvent :: Text -> Contract -> Maybe Interface
+lookupInterfaceEvent n = listToMaybe 
+                       . filter ((n==) . abiEventName . abiInterfaceEvent)
+                       . getEvents
+
+-- | Busca event por nombre y lo devuelve si existe.
+lookupEvent :: Text -> Contract -> Maybe Event
+lookupEvent n c = abiInterfaceEvent <$> lookupInterfaceEvent n c
 
 class ToCanonical a where
     toCanonical :: a -> BS.ByteString
