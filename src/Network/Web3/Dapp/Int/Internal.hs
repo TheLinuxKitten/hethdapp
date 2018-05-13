@@ -28,6 +28,8 @@ module Network.Web3.Dapp.Int.Internal
   , mkUIntNT
   ) where
 
+import Control.DeepSeq (NFData(..),deepseq)
+import Data.Aeson
 import Data.Bits
 import Data.Char (intToDigit)
 import Data.Proxy
@@ -147,6 +149,12 @@ instance (KnownNat n) => AbiValueEncoding (IntN n) where
   fromAbiValue (AVDec i) = Right $ intN i
   fromAbiValue av = fromAbiErr "IntN" av
 
+instance (KnownNat n) => NFData (IntN n) where
+  rnf (IntN i) = i `deepseq` ()
+
+instance (KnownNat n) => FromJSON (IntN n) where
+  parseJSON v = IntN <$> parseJSON v
+
 newtype UIntN (n :: Nat) = UIntN { unUIntN :: Integer }
   deriving (Enum, Num, Ord, Real)
 
@@ -224,4 +232,10 @@ instance (KnownNat n) => AbiValueEncoding (UIntN n) where
   toAbiValue = toAbiValue . toInteger
   fromAbiValue (AVDec i) = Right $ uintN i
   fromAbiValue av = fromAbiErr "UIntN" av
+
+instance (KnownNat n) => NFData (UIntN n) where
+  rnf (UIntN i) = i `deepseq` ()
+
+instance (KnownNat n) => FromJSON (UIntN n) where
+  parseJSON v = UIntN <$> parseJSON v
 

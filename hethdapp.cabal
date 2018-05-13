@@ -26,6 +26,8 @@ library
                      , Network.Web3.Dapp.EthABI.AST
                      , Network.Web3.Dapp.EthABI.Bzz
                      , Network.Web3.Dapp.EthABI.TH
+                     , Network.Web3.Dapp.ERC20.Interface
+                     , Network.Web3.Dapp.ERC20
   build-depends:       base >=4 && <5
                      , aeson
                      , attoparsec
@@ -33,6 +35,7 @@ library
                      , bytestring
                      , cryptonite
                      , curl
+                     , deepseq
                      , directory
                      , hethrpc
                      , hjsonrpc
