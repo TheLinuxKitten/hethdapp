@@ -13,6 +13,7 @@
 
 module Network.Web3.Dapp.EthABI.TH
   ( compile
+  , compileInterface
   , downloadHttp
   , downloadIpc
   , fromJust
@@ -130,11 +131,32 @@ import Network.Web3.Types
 --      y los fuentes compilados.
 --
 compile :: Solc.SolcSettings -> [FilePath] -> Q [Dec]
-compile stgs fps = do
+compile = compileFile False
+
+-- | Compila un fuente solidity que implementa una interfaz (funciones sin cuerpo).
+--
+-- Las diferencias con la compilación de fuentes normales son:
+--
+--    * No genera la función ___guard__ ni la función ___swarm_upload__
+--
+--    * Las funciones ___out__, y por lo tanto todas las funciones ___call__
+--      y ___sendtx__, devuelven `Either`: Al ser una interfaz es posible
+--      llamar a funciones cuyos datos de retorno no se correspondan con los
+--      especificados en la interfaz, ya que estos no forman parte del selector
+--      de función.
+--
+--    * La función ___decode_log__ devuelve `Nothing` si no reconoce el event a
+--      decodificar.
+--
+compileInterface :: Solc.SolcSettings -> [FilePath] -> Q [Dec]
+compileInterface = compileFile True
+
+compileFile :: Bool -> Solc.SolcSettings -> [FilePath] -> Q [Dec]
+compileFile oi stgs fps = do
   (econtracts,_,_) <- runIO $ Solc.compile stgs fps
   case econtracts of
     Left err -> fail (T.unpack err)
-    Right contracts -> concat <$> mapM genContract contracts
+    Right contracts -> concat <$> mapM (genContract oi) contracts
 
 download :: NoLoggingT IO (Either Text HexData) -> SwarmSettings -> Q [Dec]
 download f swarmOps = do
@@ -145,7 +167,7 @@ download f swarmOps = do
       Right binCode -> downloadMetadata swarmOps binCode
   case eDownMeta of
     Left e2 -> fail (T.unpack e2)
-    Right (contract,_) -> genContract contract
+    Right (contract,_) -> genContract False contract
 
 ethGetCode :: (JsonRpcConn c, MonadLoggerIO m, MonadBaseControl IO m)
            => HexEthAddr -> Web3T c m HexData
@@ -188,35 +210,41 @@ ethNameT = mkName . (\s -> (toUpper $ head s) : tail s) . ethName
 ethNameD :: [Text] -> Name
 ethNameD = mkName . ethName . map (T.map toLower)
 
-genContract :: Contract -> Q [Dec]
-genContract contract = do
+genContract :: Bool -> Contract -> Q [Dec]
+genContract onlyInterface contract = do
   let abi = abiContractAbi contract
   let conName = abiContractName contract
   let conNameD = ethNameD [conName,"Contract"]
   conT <- [t| Contract |]
   conE <- [| contract |]
-  let conD =
+  let conD = 
         [ SigD conNameD conT
         , FunD conNameD [Clause [] (NormalB conE) []]
         ]
-  conGuardD <- genGuard conName conNameD
-  conEventsD <- genEvents conName
+  conGuardD <- if onlyInterface
+                then return []
+                else genGuard conName conNameD
+  conEventsD <- genEvents onlyInterface conName
                               ( map abiInterfaceEvent
                               $ filter isInterfaceEvent abi)
-  let abiCons = map abiInterfaceConstructor $ filter isInterfaceConstructor abi
-  let cons = if null abiCons
-              then [Constructor [] False SMNonPayable False]
-              else abiCons
-  conConstrsD <- if isJust (abiContractBin contract)
-                  then concat <$> mapM (genConstr conName) cons
-                  else return []
+  conConstrsD <- if onlyInterface
+                    then return []
+                    else do
+                      let abiCons = map abiInterfaceConstructor
+                                  $ filter isInterfaceConstructor abi
+                      let cons = if null abiCons
+                                  then [Constructor [] False SMNonPayable False]
+                                  else abiCons
+                      if isJust (abiContractBin contract)
+                        then concat <$> mapM (genConstr conName) cons
+                        else return []
   let funcs = map abiInterfaceFunction $ filter isInterfaceFunction abi
   let (_,overNoms) = foldr getOverFunc ([],[]) funcs
   let (funcs1,funcs2) = partition (not . isOverFunc overNoms) funcs
   let func1Noms = map abiFuncName funcs1
   let (func2Noms,_) = foldr addOverFunc ([],initOverFuncNoms overNoms) funcs2
-  conFuncs1D <- concat <$> mapM (genFunc conName) (zip func1Noms funcs1)
-  conFuncs2D <- concat <$> mapM (genFunc conName) (zip func2Noms funcs2)
+  conFuncs1D <- concat <$> mapM (genFunc onlyInterface conName) (zip func1Noms funcs1)
+  conFuncs2D <- concat <$> mapM (genFunc onlyInterface conName) (zip func2Noms funcs2)
   return $ conD ++ conGuardD ++ conEventsD ++ conConstrsD ++ conFuncs1D ++ conFuncs2D
   where
     getOverFunc f (ns,ons) =
@@ -349,8 +377,8 @@ genConstr conName constructor = do
   upFunD <- [d| $upNameD = uploadMetadata defaultSwarmSettings (fromJust $ abiContractBin $conE) (abiContractMetadata $conE) |]
   return $ conTyD ++ conFunD ++ conFunCallD ++ upFunD
 
-genFunc :: Text -> (Text,Function) -> Q [Dec]
-genFunc conName (funcName,function) = do
+genFunc :: Bool -> Text -> (Text,Function) -> Q [Dec]
+genFunc onlyInterface conName (funcName,function) = do
   let ips = idxParams False $ abiFuncInputs function
   let ops = idxParams False $ abiFuncOutputs function
   let funcNameD = [| funcName |]
@@ -372,16 +400,22 @@ genFunc conName (funcName,function) = do
                     _ -> [| $funInPre |]
   funInFunD <- (SigD funInNameD funInFunT :)
            <$> [d| $(return $ VarP funInNameD) = $funInBody |]
-  let funOutTyNameT = ConT $ ethNameT [conName,funcName,"Out"]
+  let funOutTyNameT0 = ConT $ ethNameT [conName,funcName,"Out"]
+  funOutTyNameT <- if onlyInterface
+                    then [t| Either Text $(return funOutTyNameT0) |]
+                    else [t| $(return funOutTyNameT0) |]
   let funOutNameD = ethNameD [conName,funcName,"Out"]
-  funOutFunD <- case length ops of
-                  0 -> return []
-                  otherwise -> (SigD funOutNameD (AppT (AppT ArrowT resT) funOutTyNameT) :) <$> [d| $(return $ VarP funOutNameD) = fromRight . decodeAbi $funE |]
+  funOutTyBody <- if onlyInterface
+                    then [d| $(return $ VarP funOutNameD) = decodeAbi $funE |]
+                    else [d| $(return $ VarP funOutNameD) = fromRight . decodeAbi $funE |]
+  let funOutFunD = case length ops of
+                    0 -> []
+                    otherwise -> SigD funOutNameD (AppT (AppT ArrowT resT) funOutTyNameT) : funOutTyBody
   conFunCallD <- genFuncCall (abiFuncStateMutability function) False conName funcName (abiFuncInputs function) (abiFuncOutputs function)
   return $ inTyD ++ outTyD ++ funInFunD ++ funOutFunD ++ conFunCallD
 
-genEvents :: Text -> [Event] -> Q [Dec]
-genEvents conName events = if length events == 0
+genEvents :: Bool -> Text -> [Event] -> Q [Dec]
+genEvents onlyInterface conName events = if length events == 0
   then return []
   else do
     (evdNameD, eventD) <- genEventType False conName events
@@ -398,9 +432,13 @@ genEvents conName events = if length events == 0
     let conE = return $ VarE $ ethNameD [conName,"Contract"]
     let evInsFunName2 = ethNameD [conName,"Decode","Log"]
     let evInsFunNameD2 = return $ VarP evInsFunName2
-    evInsFunT2 <- [t| RpcEthLog -> Either Text $evdNameT |]
+    evInsFunT2 <- if onlyInterface
+                  then [t| RpcEthLog -> Maybe (Either Text $evdNameT) |]
+                  else [t| RpcEthLog -> Either Text $evdNameT |]
+    evInsFunD2 <- if onlyInterface
+                    then [d| $evInsFunNameD2 = (\medlr -> medlr >>= Just . (\edlr -> edlr >>= uncurry $(return $ VarE $ mkName "fromLogEvent"))) . decodeLog (abiContractAbi $conE) |]
+                    else [d| $evInsFunNameD2 = (\edlr -> edlr >>= uncurry $(return $ VarE $ mkName "fromLogEvent")) . fromJust . decodeLog (abiContractAbi $conE) |]
     let evInsFunSigD2 = SigD evInsFunName2 evInsFunT2
-    evInsFunD2 <- [d| $evInsFunNameD2 = (\edlr -> edlr >>= uncurry $(return $ VarE $ mkName "fromLogEvent")) . fromJust . decodeLog (abiContractAbi $conE) |]
     (evdNameMD, eventMD) <- genEventType True conName events
     let evInsMNameT = return $ ConT evdNameMD
     evInsMT <- [t| ToEventFilter $evInsMNameT |]
